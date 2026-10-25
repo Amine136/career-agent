@@ -1,0 +1,77 @@
+# Cloud Run Job: ingestion + retention.
+#
+# Replace PROJECT_ID, REGION and IMAGE_URI before applying. Credentials are read from
+# Secret Manager; do not inline them here.
+#
+#   gcloud run jobs replace deploy/cloud-run-ingest.yaml --region REGION
+
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: career-agent-ingest
+  labels:
+    app: career-agent
+spec:
+  template:
+    spec:
+      parallelism: 1
+      taskCount: 1
+      template:
+        spec:
+          serviceAccountName: career-agent-run@PROJECT_ID.iam.gserviceaccount.com
+          timeoutSeconds: 3600
+          maxRetries: 1
+          containers:
+            - image: IMAGE_URI
+              command: ["pnpm"]
+              args: ["scheduler"]
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: 512Mi
+              env:
+                - name: NODE_ENV
+                  value: production
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: career-agent-database-url
+                      key: latest
+                - name: BRIGHTDATA_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: career-agent-brightdata-token
+                      key: latest
+                - name: BRIGHTDATA_ZONE
+                  value: web_unlocker1
+                - name: LINKEDIN_REQUEST_DELAY_MS
+                  value: "1500"
+                - name: LINKEDIN_TIME_BUDGET_MS
+                  value: "2700000"
+                - name: LINKEDIN_MAX_PAGES
+                  value: "40"
+                - name: INDEED_MAX_SEARCHES
+                  value: "83"
+                - name: INDEED_BUDGET_WINDOW_DAYS
+                  value: "3"
+                - name: INDEED_MIN_ACCEPTED
+                  value: "5"
+                - name: INDEED_MAX_PAGES
+                  value: "5"
+                - name: INDEED_MAX_REMOTE_SEARCHES
+                  value: "25"
+                - name: SCHEDULER_TIME_BUDGET_MS
+                  value: "3300000"
+                - name: INGEST_MAX_JOBS
+                  value: "1000"
+                - name: INGEST_MAX_JOBS_PER_COUNTRY
+                  value: "100"
+                - name: INGEST_REMOTE_SHARE
+                  value: "0.5"
+                - name: INGEST_COMPANY_CAP
+                  value: "10"
+                - name: INGEST_COMPANY_WINDOW_DAYS
+                  value: "10"
+                # Enable for a safe rollout that only logs would-be skips.
+                # - name: INGEST_COMPANY_DRY_RUN
+                #   value: "true"

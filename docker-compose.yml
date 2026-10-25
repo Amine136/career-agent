@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: career_agent
+      POSTGRES_PASSWORD: career_agent
+      POSTGRES_DB: career_agent
+    ports:
+      - "5434:5432"
+    volumes:
+      - career-agent-db:/var/lib/postgresql/data
+      - ./db/local/init-test-db.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U career_agent -d career_agent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  career-agent-db:

@@ -1,0 +1,64 @@
+# Cloud Run Job: AI scoring.
+#
+# Replace PROJECT_ID, REGION and IMAGE_URI before applying. GEMINI_API_KEY is read from
+# Secret Manager; do not inline it here.
+#
+#   gcloud run jobs replace deploy/cloud-run-score.yaml --region REGION
+
+apiVersion: run.googleapis.com/v1
+kind: Job
+metadata:
+  name: career-agent-score
+  labels:
+    app: career-agent
+spec:
+  template:
+    spec:
+      parallelism: 1
+      taskCount: 1
+      template:
+        spec:
+          serviceAccountName: career-agent-run@PROJECT_ID.iam.gserviceaccount.com
+          timeoutSeconds: 4800
+          maxRetries: 1
+          containers:
+            - image: IMAGE_URI
+              command: ["pnpm"]
+              args: ["score"]
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: 512Mi
+              env:
+                - name: NODE_ENV
+                  value: production
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: career-agent-database-url
+                      key: latest
+                - name: GEMINI_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: career-agent-gemini-api-key
+                      key: latest
+                - name: AI_MODEL
+                  value: gemini-3.5-flash-lite
+                - name: AI_FALLBACK_MODEL
+                  value: gemini-3.1-flash-lite
+                - name: AI_MAX_JOBS_PER_RUN
+                  value: "1000"
+                - name: AI_REQUEST_DELAY_MS
+                  value: "250"
+                - name: AI_TIMEOUT_MS
+                  value: "30000"
+                - name: AI_MAX_RETRIES
+                  value: "2"
+                - name: AI_TIME_BUDGET_MS
+                  value: "4200000"
+                - name: SCORE_LOOKBACK_DAYS
+                  value: "3"
+                - name: AI_MAX_REQUESTS_PER_MINUTE
+                  value: "15"
+                - name: AI_MAX_REQUESTS_PER_DAY
+                  value: "500"

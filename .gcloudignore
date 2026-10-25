@@ -1,0 +1,11 @@
+.git
+.gitignore
+.gcloudignore
+node_modules/
+dist/
+release/
+coverage/
+*.log
+.env
+.env.*
+.github/
